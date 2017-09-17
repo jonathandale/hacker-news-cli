@@ -17,7 +17,7 @@
 (def charm ((node/require "charm") stdout))
 (def spawn (.-spawn (node/require "child_process")))
 (def chalk (node/require "chalk"))
-(def story-height 3)
+(def story-height 2)
 (def types
   {:top {:label "Top"
          :path "topstories"}
@@ -58,12 +58,8 @@
       (.up charm 1)
       (.erase charm "line"))))
 
-(defn render-meta []
-  (str "Page " (:page @state) " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
-       (ui/nl)))
-
 (defn render-stories []
-  (.write charm (render-meta))
+  (.write charm (ui/print-meta state))
   (doall
     (map-indexed
       (fn [idx {:keys [title] :as story}]
@@ -108,6 +104,7 @@
         (.up charm 1)))
     (.on "close"
       (fn []
+        (.cursor charm true)
         (.close rl)
         (.exit js/process 0)))))
 
@@ -127,14 +124,18 @@
     (swap! state assoc :type (keyword t))))
 
 (defn init []
+  (.reset charm)
+  (.cursor charm false)
   (process-args)
   (load-prefs)
   (setup-rl)
-  (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path (get types (:type @state))) ".json"))
-      (.then
-        (fn [ids]
-          (swap! state assoc :story-ids (json-> ids))
-          (.on stdin "keypress" handle-events)
-          (get-page-stories)))))
+  (let [type (get types (:type @state))]
+    (ui/print-banner (:label type))
+    (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path type) ".json"))
+        (.then
+          (fn [ids]
+            (swap! state assoc :story-ids (json-> ids))
+            (.on stdin "keypress" handle-events)
+            (get-page-stories))))))
 
 (init)

@@ -38,3 +38,12 @@
   (pstr
     (if selected (.white.underline chalk title) (.white chalk title))
     (nl)))
+
+(defn print-banner [label]
+  (pstr
+    ((.bgRgb chalk 255 102 0) " Hacker News ")
+    (.white.inverse chalk (str label " Stories"))))
+
+(defn print-meta [state]
+  (str "Page " (inc (:page @state)) " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
+       (nl)))
