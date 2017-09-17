@@ -2,7 +2,9 @@
   (:require [cljs.nodejs :as node]
             [cljs.pprint :refer [pprint]]
             [hcknws.ui :as ui]
-            [hcknws.utils :refer [json-> js->]]))
+            [hcknws.prefs :as prefs :refer [set-prefs get-prefs]]
+            [hcknws.utils :refer [json-> js->]]
+            [clojure.string :refer [replace-first]]))
 
 (node/enable-util-print!)
 
@@ -15,17 +17,26 @@
 (def charm ((node/require "charm") stdout))
 (def spawn (.-spawn (node/require "child_process")))
 (def chalk (node/require "chalk"))
-(def page-count 6)
 (def story-height 3)
+(def types
+  {:top {:label "Top"
+         :path "topstories"}
+   :new {:label "New"
+         :path "newstories"}
+   :best {:label "Best"
+          :path "beststories"}})
+
 (def state (atom {:idx 0
                   :page 0
                   :story-ids nil
                   :stories nil
+                  :page-count 6
+                  :type :top
                   :fetching true}))
 
 (defn get-story-ids []
-  (let [start (* (:page @state) page-count)]
-    (subvec (:story-ids @state) start (min (count (:story-ids @state)) (+ start page-count)))))
+  (let [start (* (:page @state) (:page-count @state))]
+    (subvec (:story-ids @state) start (min (count (:story-ids @state)) (+ start (:page-count @state))))))
 
 (defn get-stories []
   (swap! state assoc :fetching true)
@@ -48,7 +59,7 @@
       (.erase charm "line"))))
 
 (defn render-meta []
-  (str "Page " (:page @state) " of " (.round js/Math (/ (count (:story-ids @state)) page-count))
+  (str "Page " (:page @state) " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
        (ui/nl)))
 
 (defn render-stories []
@@ -74,7 +85,7 @@
                       (clear-stories)
                       (swap! state update :idx dec)
                       (render-stories))
-        (= "down" k) (when (> page-count (inc (:idx @state)))
+        (= "down" k) (when (> (:page-count @state) (inc (:idx @state)))
                        (clear-stories)
                        (swap! state update :idx inc)
                        (render-stories))
@@ -84,7 +95,7 @@
                        (swap! state update :page dec)
                        (swap! state assoc :idx 0)
                        (get-page-stories))
-        (= "right" k) (when (< (:page @state) (.round js/Math (/ (count (:story-ids @state)) page-count)))
+        (= "right" k) (when (< (:page @state) (.round js/Math (/ (count (:story-ids @state)) (:page-count @state))))
                         (clear-stories)
                         (swap! state update :page inc)
                         (swap! state assoc :idx 0)
@@ -100,10 +111,26 @@
         (.close rl)
         (.exit js/process 0)))))
 
+(defn process-args []
+  (doall
+    (map
+      (fn [arg]
+        (cond
+          (re-find #"--type=|-t=" arg) (set-prefs "type" (replace-first arg #"^.*=" ""))
+          (re-find #"--per-page=|-p=" arg) (set-prefs "per_page" (replace-first arg #"^.*=" ""))))
+      (nthrest (.slice (.-argv js/process) 3) 2))))
+
+(defn load-prefs []
+  (when-let [pc (get-prefs "per_page")]
+    (swap! state assoc :page-count (js/parseInt pc 10)))
+  (when-let [t (get-prefs "type")]
+    (swap! state assoc :type (keyword t))))
+
 (defn init []
-  ;; Top stories
+  (process-args)
+  (load-prefs)
   (setup-rl)
-  (-> (rp "https://hacker-news.firebaseio.com/v0/topstories.json")
+  (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path (get types (:type @state))) ".json"))
       (.then
         (fn [ids]
           (swap! state assoc :story-ids (json-> ids))
