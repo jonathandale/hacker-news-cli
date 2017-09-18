@@ -34,15 +34,22 @@
   ([n]
    (apply str (take n (repeat \newline)))))
 
-(defn print-story [{:keys [score by title descendants time] :as story} selected]
+(defn print-compact [{:keys [score by title descendants time] :as story} selected]
   (pstr
-    (if selected (.white.underline chalk title) (.white chalk title))
-    (nl)))
+    (if selected (.white.underline chalk title) (.white chalk title))))
+
+(defn print-normal [{:keys [score by title descendants time] :as story} selected]
+  (pstr "will be normal"))
+
+(defn print-story [story display selected]
+  (if (= :compact display)
+    (print-compact story selected)
+    (print-normal story selected)))
 
 (defn print-banner [label]
   (pstr
     ((.bgRgb chalk 255 102 0) " Hacker News ")
-    (.white.inverse chalk (str label " Stories"))))
+    (.white.inverse chalk (str " " label " Stories "))))
 
 (defn print-meta [state]
   (str "Page " (inc (:page @state)) " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))

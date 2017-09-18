@@ -17,14 +17,15 @@
 (def charm ((node/require "charm") stdout))
 (def spawn (.-spawn (node/require "child_process")))
 (def chalk (node/require "chalk"))
-(def story-height 2)
-(def types
-  {:top {:label "Top"
-         :path "topstories"}
-   :new {:label "New"
-         :path "newstories"}
-   :best {:label "Best"
-          :path "beststories"}})
+(def types {:top {:label "Top"
+                  :path "topstories"}
+            :new {:label "New"
+                  :path "newstories"}
+            :best {:label "Best"
+                   :path "beststories"}})
+
+(def story-height {:compact 1
+                   :normal 2})
 
 (def state (atom {:idx 0
                   :page 0
@@ -32,6 +33,7 @@
                   :stories nil
                   :page-count 6
                   :type :top
+                  :display :normal
                   :fetching true}))
 
 (defn get-story-ids []
@@ -50,23 +52,20 @@
 (defn open-story []
   (spawn "open" (clj->js [(:url (nth (:stories @state) (:idx @state))) "--background"])))
 
-(defn clear-stories []
-  (.erase charm "line")
-  (dotimes [_ (+ (* story-height (count (:stories @state)))
-                 1)]
-    (do
-      (.up charm 1)
-      (.erase charm "line"))))
+(defn clear-stories [y]
+  (.position charm 0 y)
+  (.erase charm "down"))
 
 (defn render-stories []
-  (.write charm (ui/print-meta state))
   (doall
     (map-indexed
       (fn [idx {:keys [title] :as story}]
-        (.write charm (str (ui/print-story story (= idx (:idx @state))))))
+        (.write charm (str (ui/print-story story (:display @state) (= idx (:idx @state))))))
       (:stories @state))))
 
 (defn get-page-stories []
+  (clear-stories 2)
+  (.write charm (ui/print-meta state))
   (-> (get-stories)
       (.then
         (fn [stories]
@@ -74,28 +73,33 @@
           (render-stories)))))
 
 (defn handle-events [_ key]
-  (when-not (:fetching @state)
-    (let [k (.-name key)]
-      (cond
-        (= "up" k) (when (pos? (:idx @state))
-                      (clear-stories)
-                      (swap! state update :idx dec)
-                      (render-stories))
-        (= "down" k) (when (> (:page-count @state) (inc (:idx @state)))
-                       (clear-stories)
-                       (swap! state update :idx inc)
-                       (render-stories))
-        (= "return" k) (open-story)
-        (= "left" k) (when (pos? (:page @state))
-                       (clear-stories)
-                       (swap! state update :page dec)
-                       (swap! state assoc :idx 0)
-                       (get-page-stories))
-        (= "right" k) (when (< (:page @state) (.round js/Math (/ (count (:story-ids @state)) (:page-count @state))))
-                        (clear-stories)
-                        (swap! state update :page inc)
-                        (swap! state assoc :idx 0)
-                        (get-page-stories))))))
+  (let [story-change (fn [dir]
+                        (clear-stories 3)
+                        (swap! state update :idx dir)
+                        (render-stories))
+        page-change (fn [dir]
+                      (swap! state update :page dir)
+                      (swap! state assoc :idx 0)
+                      (get-page-stories))]
+    (when-not (:fetching @state)
+      (let [k (.-name key)]
+        (cond
+          (and (= "up" k) (pos? (:idx @state)))
+          (story-change dec)
+
+          (and (= "down" k) (> (:page-count @state) (inc (:idx @state))))
+          (story-change inc)
+
+          (= "return" k)
+          (open-story)
+
+          (and (= "left" k) (pos? (:page @state)))
+          (page-change dec)
+
+          (and (= "right" k)
+               (< (:page @state) (.round js/Math (/ (count (:story-ids @state))
+                                                    (:page-count @state)))))
+          (page-change inc))))))
 
 (defn setup-rl []
   (-> rl
@@ -113,6 +117,8 @@
     (map
       (fn [arg]
         (cond
+          (re-find #"--compact|-c" arg) (set-prefs "display" "compact")
+          (re-find #"--normal|-n" arg) (set-prefs "display" "normal")
           (re-find #"--type=|-t=" arg) (set-prefs "type" (replace-first arg #"^.*=" ""))
           (re-find #"--per-page=|-p=" arg) (set-prefs "per_page" (replace-first arg #"^.*=" ""))))
       (nthrest (.slice (.-argv js/process) 3) 2))))
@@ -121,7 +127,9 @@
   (when-let [pc (get-prefs "per_page")]
     (swap! state assoc :page-count (js/parseInt pc 10)))
   (when-let [t (get-prefs "type")]
-    (swap! state assoc :type (keyword t))))
+    (swap! state assoc :type (keyword t)))
+  (when-let [d (get-prefs "display")]
+    (swap! state assoc :display (keyword d))))
 
 (defn init []
   (.reset charm)
