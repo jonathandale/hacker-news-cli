@@ -58,11 +58,12 @@
   (.erase charm "down"))
 
 (defn render-stories []
-  (doall
-    (map-indexed
-      (fn [idx {:keys [title] :as story}]
-        (.write charm (ui/print-story story (:display @state) (= idx (:idx @state)))))
-      (:stories @state))))
+  (let [max-c-w (count (str (apply max (map :descendants (:stories @state)))))]
+    (doall
+      (map-indexed
+        (fn [idx {:keys [title] :as story}]
+          (.write charm (ui/print-story max-c-w story (:display @state) (= idx (:idx @state)))))
+        (:stories @state)))))
 
 (defn get-page-stories []
   (clear-stories 3)
