@@ -1,32 +1,15 @@
 (ns hcknws.ui
-  (:require [cljs.nodejs :as node]))
+  (:require [cljs.nodejs :as node]
+            [cljs.pprint :refer [pprint]]))
 
 (def chalk (node/require "chalk"))
-(def log-update (node/require "log-update"))
-(def timeout (atom nil))
-(def dots {:interval 80 :frames ["⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏"]})
-
 (def hn-orange (.rgb chalk 255 102 0))
+(def hn-orange-bg (.bgRgb chalk 255 102 0))
 (def hn-beige (.rgb chalk 246 246 239))
-
-(defn start-spinner [text]
-  (let [tick (atom 0)
-        dot-len (count (:frames dots))]
-    (reset! timeout
-      (js/setInterval
-        #(log-update (str (.cyan chalk (nth (:frames dots) (mod (swap! tick inc) dot-len))) " " text))
-        (:interval dots)))))
-
-(defn stop-spinner []
-  (js/clearInterval @timeout)
-  (reset! timeout nil)
-  (log-update ""))
-
-(defn log [& args]
-  (apply log-update args))
+(def padding-left " ")
 
 (defn pstr [& args]
-  (println (apply str args)))
+  (str (println (apply str args))))
 
 (defn nl
   ([]
@@ -36,6 +19,8 @@
 
 (defn print-compact [{:keys [score by title descendants time] :as story} selected]
   (pstr
+    padding-left
+    (hn-orange (str descendants " "))
     (if selected (.white.underline chalk title) (.white chalk title))))
 
 (defn print-normal [{:keys [score by title descendants time] :as story} selected]
@@ -48,9 +33,15 @@
 
 (defn print-banner [label]
   (pstr
-    ((.bgRgb chalk 255 102 0) " Hacker News ")
+    (nl)
+    padding-left
+    (hn-orange-bg " Hacker News ")
     (.white.inverse chalk (str " " label " Stories "))))
 
 (defn print-meta [state]
-  (str "Page " (inc (:page @state)) " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
-       (nl)))
+  (pstr
+    (nl)
+    padding-left
+    "Page " (inc (:page @state))
+    " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
+    (nl)))

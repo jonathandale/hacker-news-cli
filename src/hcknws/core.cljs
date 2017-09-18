@@ -24,9 +24,6 @@
             :best {:label "Best"
                    :path "beststories"}})
 
-(def story-height {:compact 1
-                   :normal 2})
-
 (def state (atom {:idx 0
                   :page 0
                   :story-ids nil
@@ -49,8 +46,12 @@
                 (swap! state assoc :fetching false)
                 (map json-> (js-> %))))))
 
-(defn open-story []
-  (spawn "open" (clj->js [(:url (nth (:stories @state) (:idx @state))) "--background"])))
+(defn open-link [type]
+  (let [story (nth (:stories @state) (:idx @state))
+        link (cond
+              (= :comments type) (str "https://news.ycombinator.com/item?id=" (:id story))
+              (= :url type) (:url story))]
+    (spawn "open" (clj->js [link "--background"]))))
 
 (defn clear-stories [y]
   (.position charm 0 y)
@@ -60,11 +61,11 @@
   (doall
     (map-indexed
       (fn [idx {:keys [title] :as story}]
-        (.write charm (str (ui/print-story story (:display @state) (= idx (:idx @state))))))
+        (.write charm (ui/print-story story (:display @state) (= idx (:idx @state)))))
       (:stories @state))))
 
 (defn get-page-stories []
-  (clear-stories 2)
+  (clear-stories 3)
   (.write charm (ui/print-meta state))
   (-> (get-stories)
       (.then
@@ -74,7 +75,7 @@
 
 (defn handle-events [_ key]
   (let [story-change (fn [dir]
-                        (clear-stories 3)
+                        (clear-stories 6)
                         (swap! state update :idx dir)
                         (render-stories))
         page-change (fn [dir]
@@ -91,7 +92,10 @@
           (story-change inc)
 
           (= "return" k)
-          (open-story)
+          (open-link :url)
+
+          (= "space" k)
+          (open-link :comments)
 
           (and (= "left" k) (pos? (:page @state)))
           (page-change dec)
