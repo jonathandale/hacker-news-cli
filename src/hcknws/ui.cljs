@@ -39,6 +39,12 @@
     (hn-orange-bg " Hacker News ")
     (.white.inverse chalk (str " " label " Stories "))))
 
+(defn print-footer []
+  (pstr
+    (nl)
+    padding-left
+    (.grey chalk "`ctrl+c` to exit, or type 'q'")))
+
 (defn print-meta [state]
   (pstr
     (nl)

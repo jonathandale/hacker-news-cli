@@ -28,7 +28,7 @@
                   :page 0
                   :story-ids nil
                   :stories nil
-                  :page-count 6
+                  :page-count 8
                   :type :top
                   :display :normal
                   :fetching true}))
@@ -63,7 +63,8 @@
       (map-indexed
         (fn [idx {:keys [title] :as story}]
           (.write charm (ui/print-story max-c-w story (:display @state) (= idx (:idx @state)))))
-        (:stories @state)))))
+        (:stories @state)))
+    (ui/print-footer)))
 
 (defn get-page-stories []
   (clear-stories 3)
@@ -73,6 +74,13 @@
         (fn [stories]
           (swap! state assoc :stories stories)
           (render-stories)))))
+
+(defn exit []
+  (.cursor charm true)
+  (.close rl)
+  (.erase charm "line")
+  (.log js/console "\nBye, see you in a bit.")
+  (.exit js/process 0))
 
 (defn handle-events [_ key]
   (let [story-change (fn [dir]
@@ -98,6 +106,9 @@
           (= "space" k)
           (open-link :comments)
 
+          (= "q" k)
+          (exit)
+
           (and (= "left" k) (pos? (:page @state)))
           (page-change dec)
 
@@ -111,11 +122,7 @@
     (.on "line"
       (fn [line]
         (.up charm 1)))
-    (.on "close"
-      (fn []
-        (.cursor charm true)
-        (.close rl)
-        (.exit js/process 0)))))
+    (.on "close" exit)))
 
 (defn process-args []
   (doall
