@@ -76,14 +76,15 @@
   (-> (get-stories)
       (.then
         (fn [stories]
-          (ui/stop-spinner)
+          (ui/stop-spinner 6)
           (swap! state assoc :stories stories)
           (render-stories)))))
 
 (defn exit []
-  (.cursor charm true)
+  (-> charm
+    (.cursor true)
+    (.erase "line"))
   (.close rl)
-  (.erase charm "line")
   (.log js/console "\n Bye, see you in a bit.")
   (.exit js/process 0))
 
@@ -153,8 +154,9 @@
     (swap! state assoc :display (keyword d))))
 
 (defn init []
-  (.reset charm)
-  (.cursor charm false)
+  (-> charm
+    (.reset)
+    (.cursor false))
   (process-args)
   (load-prefs)
   (setup-rl)
@@ -164,7 +166,7 @@
     (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path type) ".json"))
         (.then
           (fn [ids]
-            (ui/stop-spinner)
+            (ui/stop-spinner 3)
             (swap! state assoc :story-ids (json-> ids))
             (.on stdin "keypress" handle-events)
             (get-page-stories))))))

@@ -21,25 +21,6 @@
   ([n]
    (apply str (take n (repeat \newline)))))
 
-(defn start-spinner []
-  (let [tick (atom 0)
-        dot-len (count (:frames dots))]
-    (reset! timeout
-      (js/setInterval
-        #(do
-          (.up charm 1)
-          (.write charm
-            (str (nl)
-                 padding-left
-                 (hn-orange (nth (:frames dots) (mod (swap! tick inc) dot-len))))))
-        (:interval dots)))))
-
-(defn stop-spinner []
-  (js/clearInterval @timeout)
-  (.erase charm "line")
-  (.left charm 2)
-  (reset! timeout nil))
-
 (defn print-compact [max-w {:keys [type title descendants] :as story} selected]
   (pstr
     padding-left
@@ -88,3 +69,21 @@
     "Page " (inc (:page @state))
     " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
     (nl)))
+
+(defn start-spinner []
+  (let [tick (atom 0)
+        dot-len (count (:frames dots))]
+    (reset! timeout
+      (js/setInterval
+        #(-> charm
+           (.position 30 2)
+           (.write (str (hn-orange (nth (:frames dots) (mod (swap! tick inc) dot-len))))))
+        (:interval dots)))))
+
+(defn stop-spinner [y]
+  (js/clearInterval @timeout)
+  (-> charm
+    (.left 1)
+    (.erase "end")
+    (.position 0 y))
+  (reset! timeout nil))
