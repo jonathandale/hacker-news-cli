@@ -4,7 +4,7 @@
             [hcknws.ui :as ui]
             [hcknws.prefs :as prefs :refer [set-prefs get-prefs]]
             [hcknws.utils :refer [json-> js->]]
-            [clojure.string :refer [replace-first]]))
+            [clojure.string]))
 
 (node/enable-util-print!)
 
@@ -138,8 +138,8 @@
         (cond
           (re-find #"--compact|-c" arg) (set-prefs "display" "compact")
           (re-find #"--normal|-n" arg) (set-prefs "display" "normal")
-          (re-find #"--type=|-t=" arg) (set-prefs "type" (replace-first arg #"^.*=" ""))
-          (re-find #"--per-page=|-p=" arg) (set-prefs "per_page" (replace-first arg #"^.*=" ""))))
+          (re-find #"--type=|-t=" arg) (set-prefs "type" (clojure.string/replace-first arg #"^.*=" ""))
+          (re-find #"--per-page=|-p=" arg) (set-prefs "per_page" (clojure.string/replace-first arg #"^.*=" ""))))
       (nthrest (.slice (.-argv js/process) 3) 2))))
 
 (defn load-prefs []
