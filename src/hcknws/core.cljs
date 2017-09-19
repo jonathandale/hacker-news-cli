@@ -93,18 +93,21 @@
                         (clear-stories 6)
                         (swap! state update :idx dir)
                         (render-stories))
-        page-change (fn [dir]
+        page-change (fn [dir idx]
                       (swap! state update :page dir)
-                      (swap! state assoc :idx 0)
+                      (swap! state assoc :idx idx)
                       (get-page-stories))]
     (when-not (:fetching @state)
       (let [k (.-name key)]
         (cond
-          (and (= "up" k) (pos? (:idx @state)))
-          (story-change dec)
+          (= "up" k) (if (pos? (:idx @state))
+                       (story-change dec)
+                       (when (pos? (:page @state))
+                         (page-change dec (dec (:page-count @state)))))
 
-          (and (= "down" k) (> (:page-count @state) (inc (:idx @state))))
-          (story-change inc)
+          (= "down" k) (if (> (:page-count @state) (inc (:idx @state)))
+                         (story-change inc)
+                         (page-change inc 0))
 
           (= "o" k)
           (do
@@ -116,16 +119,16 @@
             (.erase charm "line")
             (open-link :comments))
 
-          (= "q" k)
+          (or (= "q" k) (= "escape" k))
           (exit)
 
           (and (= "left" k) (pos? (:page @state)))
-          (page-change dec)
+          (page-change dec 0)
 
           (and (= "right" k)
                (< (:page @state) (.round js/Math (/ (count (:story-ids @state))
                                                     (:page-count @state)))))
-          (page-change inc))))))
+          (page-change inc 0))))))
 
 (defn setup-rl []
   (-> rl

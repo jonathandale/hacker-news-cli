@@ -60,8 +60,11 @@
   (pstr
     (nl)
     padding-left
-    (.grey chalk "`ctrl+c` to exit, or type 'q'")))
-
+    (.grey chalk
+      (str "Arrows to navigate, `o` or `c` to visit story/comments."
+           (nl)
+           padding-left
+           "Press `esc` or 'q' to exit."))))
 (defn print-meta [state]
   (pstr
     (nl)
