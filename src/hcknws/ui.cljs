@@ -3,10 +3,13 @@
             [cljs.pprint :refer [pprint]]))
 
 (def chalk (node/require "chalk"))
+(def charm ((node/require "charm") (.-stdout js/process)))
 (def moment (node/require "moment"))
 (def hn-orange (.rgb chalk 255 102 0))
 (def hn-orange-bg (.bgRgb chalk 255 102 0))
 (def hn-beige (.rgb chalk 246 246 239))
+(def timeout (atom nil))
+(def dots {:interval 80 :frames ["⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏"]})
 (def padding-left " ")
 
 (defn pstr [& args]
@@ -17,6 +20,25 @@
    (nl 1))
   ([n]
    (apply str (take n (repeat \newline)))))
+
+(defn start-spinner []
+  (let [tick (atom 0)
+        dot-len (count (:frames dots))]
+    (reset! timeout
+      (js/setInterval
+        #(do
+          (.up charm 1)
+          (.write charm
+            (str (nl)
+                 padding-left
+                 (hn-orange (nth (:frames dots) (mod (swap! tick inc) dot-len))))))
+        (:interval dots)))))
+
+(defn stop-spinner []
+  (js/clearInterval @timeout)
+  (.erase charm "line")
+  (.left charm 2)
+  (reset! timeout nil))
 
 (defn print-compact [max-w {:keys [type title descendants] :as story} selected]
   (pstr
@@ -50,7 +72,8 @@
     (nl)
     padding-left
     (hn-orange-bg " Hacker News ")
-    (.white.inverse chalk (str " " label " Stories "))))
+    (.white.inverse chalk (str " " label " Stories "))
+    (nl)))
 
 (defn print-footer []
   (pstr

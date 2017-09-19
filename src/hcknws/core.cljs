@@ -72,9 +72,11 @@
 (defn get-page-stories []
   (clear-stories 3)
   (.write charm (ui/print-meta state))
+  (ui/start-spinner)
   (-> (get-stories)
       (.then
         (fn [stories]
+          (ui/stop-spinner)
           (swap! state assoc :stories stories)
           (render-stories)))))
 
@@ -158,9 +160,11 @@
   (setup-rl)
   (let [type (get types (:type @state))]
     (ui/print-banner (:label type))
+    (ui/start-spinner)
     (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path type) ".json"))
         (.then
           (fn [ids]
+            (ui/stop-spinner)
             (swap! state assoc :story-ids (json-> ids))
             (.on stdin "keypress" handle-events)
             (get-page-stories))))))
