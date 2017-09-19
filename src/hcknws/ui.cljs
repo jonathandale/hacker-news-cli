@@ -3,6 +3,7 @@
             [cljs.pprint :refer [pprint]]))
 
 (def chalk (node/require "chalk"))
+(def moment (node/require "moment"))
 (def hn-orange (.rgb chalk 255 102 0))
 (def hn-orange-bg (.bgRgb chalk 255 102 0))
 (def hn-beige (.rgb chalk 246 246 239))
@@ -26,7 +27,18 @@
     (if selected (.white.underline chalk title) (.white chalk title))))
 
 (defn print-normal [{:keys [score by title descendants time] :as story} selected]
-  (pstr "will be normal"))
+  (pstr
+    padding-left
+    (if selected (.white.underline chalk title) (.white chalk title))
+    (nl)
+    padding-left
+    (.grey chalk (str "by " by " "))
+    ((.rgb chalk 150 150 150) (str (.fromNow (.unix moment time)) " "))
+    (when descendants
+      (str
+        (hn-orange descendants) " "
+        (hn-orange (if (= 1 descendants) "comment" "comments"))))
+    (nl)))
 
 (defn print-story [max-w story display selected]
   (if (= :compact display)

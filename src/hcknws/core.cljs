@@ -28,7 +28,7 @@
                   :page 0
                   :story-ids nil
                   :stories nil
-                  :page-count 8
+                  :page-count 10
                   :type :top
                   :display :normal
                   :fetching true}))
@@ -48,9 +48,10 @@
 
 (defn open-link [type]
   (let [story (nth (:stories @state) (:idx @state))
+        c-link (str "https://news.ycombinator.com/item?id=" (:id story))
         link (cond
-              (= :comments type) (str "https://news.ycombinator.com/item?id=" (:id story))
-              (= :url type) (:url story))]
+              (= :comments type) c-link
+              (= :url type) (or (:url story) c-link))]
     (spawn "open" (clj->js [link "--background"]))))
 
 (defn clear-stories [y]
@@ -81,7 +82,7 @@
   (.cursor charm true)
   (.close rl)
   (.erase charm "line")
-  (.log js/console "\nBye, see you in a bit.")
+  (.log js/console "\n Bye, see you in a bit.")
   (.exit js/process 0))
 
 (defn handle-events [_ key]
@@ -102,11 +103,15 @@
           (and (= "down" k) (> (:page-count @state) (inc (:idx @state))))
           (story-change inc)
 
-          (= "return" k)
-          (open-link :url)
+          (= "o" k)
+          (do
+            (.erase charm "line")
+            (open-link :url))
 
-          (= "space" k)
-          (open-link :comments)
+          (= "c" k)
+          (do
+            (.erase charm "line")
+            (open-link :comments))
 
           (= "q" k)
           (exit)
