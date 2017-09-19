@@ -79,7 +79,7 @@
     (reset! timeout
       (js/setInterval
         #(-> charm
-           (.position 30 2)
+           (.position 29 2)
            (.write (str (hn-orange (nth (:frames dots) (mod (swap! tick inc) dot-len))))))
         (:interval dots)))))
 
