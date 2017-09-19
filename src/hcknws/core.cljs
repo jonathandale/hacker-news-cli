@@ -58,11 +58,13 @@
   (.erase charm "down"))
 
 (defn render-stories []
-  (let [max-c-w (count (str (apply max (map :descendants (:stories @state)))))]
+  (let [max-c-w (count (str (apply max (map :descendants (:stories @state)))))
+        job-w (when (some #(= "job" (:type %)) (:stories @state)) 3)
+        max-w (max max-c-w job-w)]
     (doall
       (map-indexed
         (fn [idx {:keys [title] :as story}]
-          (.write charm (ui/print-story max-c-w story (:display @state) (= idx (:idx @state)))))
+          (.write charm (ui/print-story max-w story (:display @state) (= idx (:idx @state)))))
         (:stories @state)))
     (ui/print-footer)))
 

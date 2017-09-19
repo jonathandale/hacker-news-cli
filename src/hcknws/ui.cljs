@@ -17,19 +17,20 @@
   ([n]
    (apply str (take n (repeat \newline)))))
 
-(defn print-compact [max-c-w {:keys [title descendants] :as story} selected]
+(defn print-compact [max-w {:keys [type title descendants] :as story} selected]
   (pstr
     padding-left
-    (hn-orange (str descendants " "))
-    (apply str (take (- max-c-w (count (str descendants))) (repeatedly #(str " "))))
+    (hn-orange (str (if (= "job" type) (.yellow chalk "job") descendants)))
+    (apply str (take (- max-w (if (= "job" type) 3 (count (str descendants)))) (repeatedly #(str " "))))
+    "  "
     (if selected (.white.underline chalk title) (.white chalk title))))
 
 (defn print-normal [{:keys [score by title descendants time] :as story} selected]
   (pstr "will be normal"))
 
-(defn print-story [max-c-w story display selected]
+(defn print-story [max-w story display selected]
   (if (= :compact display)
-    (print-compact max-c-w story selected)
+    (print-compact max-w story selected)
     (print-normal story selected)))
 
 (defn print-banner [label]
