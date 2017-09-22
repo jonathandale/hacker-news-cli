@@ -19,6 +19,8 @@
 (def charm ((node/require "charm") stdout))
 (def spawn (.-spawn (node/require "child_process")))
 (def chalk (node/require "chalk"))
+(def header-height 7)
+(def meta-height 3)
 (def types {:top {:label "Top"
                   :path "topstories"}
             :new {:label "New"
@@ -72,13 +74,13 @@
     (ui/print-footer)))
 
 (defn get-page-stories []
-  (clear-stories 3)
+  (clear-stories (- header-height meta-height))
   (.write charm (ui/print-meta state))
   (ui/start-spinner)
   (-> (get-stories)
       (.then
         (fn [stories]
-          (ui/stop-spinner 6)
+          (ui/stop-spinner header-height)
           (swap! state assoc :stories stories)
           (render-stories)))))
 
@@ -96,7 +98,7 @@
 
 (defn handle-events [_ key]
   (let [story-change (fn [dir]
-                        (clear-stories 6)
+                        (clear-stories header-height)
                         (swap! state update :idx dir)
                         (render-stories))
         page-change (fn [dir idx]

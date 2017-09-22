@@ -10,7 +10,7 @@
 (def hn-beige (.rgb chalk 246 246 239))
 (def timeout (atom nil))
 (def dots {:interval 80 :frames ["⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏"]})
-(def padding-left " ")
+(def padding-left "    ")
 
 (defn pstr [& args]
   (str (println (apply str args))))
@@ -31,8 +31,8 @@
 
 (defn print-normal [{:keys [score by title descendants time] :as story} selected]
   (pstr
-    padding-left
-    (if selected (.white.underline chalk title) (.white chalk title))
+    (if selected (hn-orange " ➜  ") padding-left)
+    (.white chalk title)
     (nl)
     padding-left
     (.grey chalk (str "by " by " "))
@@ -50,7 +50,7 @@
 
 (defn print-banner [label]
   (pstr
-    (nl)
+    (nl 2)
     padding-left
     (hn-orange-bg " Hacker News ")
     (.white.inverse chalk (str " " label " Stories "))
@@ -60,11 +60,8 @@
   (pstr
     (nl)
     padding-left
-    (.grey chalk
-      (str "Arrows to navigate, `o` or `c` to visit story/comments."
-           (nl)
-           padding-left
-           "Press `esc` or 'q' to exit."))))
+    (.grey chalk "`esc` or `q` to exit, `hcknws -h` for help.")))
+
 (defn print-meta [state]
   (pstr
     (nl)
@@ -79,7 +76,7 @@
     (reset! timeout
       (js/setInterval
         #(-> charm
-           (.position 29 2)
+           (.position 33 3)
            (.write (str (hn-orange (nth (:frames dots) (mod (swap! tick inc) dot-len))))))
         (:interval dots)))))
 
