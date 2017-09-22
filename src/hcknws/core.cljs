@@ -86,7 +86,7 @@
 
 (defn exit
   ([]
-   (exit "Bye, see you in a bit."))
+   (exit "   Bye, see you in a bit."))
   ([msg]
    (-> charm
      (.cursor true)
@@ -154,11 +154,16 @@
                "\n Should be one of: " (apply str (interpose ", " types))))))
 
 (defn process-args []
-  (let [{:keys [d display t type] :as args} (js-> argv)]
-    (when-let [display* (or display d)]
-      (set-and-validate-arg "display" display* ["compact" "normal"]))
-    (when-let [type* (or type t)]
-      (set-and-validate-arg "type" type* ["top" "best" "new"]))))
+  (let [{:keys [d display t type h help v version] :as args} (js-> argv)]
+    (cond
+      (or help h) (ui/print-help)
+      ; (or version v) (ui/print-version)
+      :else
+      (do
+        (when-let [display* (or display d)]
+          (set-and-validate-arg "display" display* ["compact" "normal"]))
+        (when-let [type* (or type t)]
+          (set-and-validate-arg "type" type* ["top" "best" "new"]))))))
 
 (defn load-prefs []
   (when-let [t (get-prefs "type")]
@@ -167,11 +172,11 @@
     (swap! state assoc :display (keyword d))))
 
 (defn init []
+  (process-args)
+  (load-prefs)
   (-> charm
     (.reset)
     (.cursor false))
-  (process-args)
-  (load-prefs)
   (setup-rl)
   (let [type (get types (:type @state))]
     (ui/print-banner (:label type))

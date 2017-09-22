@@ -7,7 +7,7 @@
 (def moment (node/require "moment"))
 (def hn-orange (.rgb chalk 255 102 0))
 (def hn-orange-bg (.bgRgb chalk 255 102 0))
-(def hn-beige (.rgb chalk 246 246 239))
+(def light-grey (.rgb chalk 150 150 150))
 (def timeout (atom nil))
 (def dots {:interval 80 :frames ["⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏"]})
 (def padding-left "    ")
@@ -36,7 +36,7 @@
     (nl)
     padding-left
     (.grey chalk (str "by " by " "))
-    ((.rgb chalk 150 150 150) (str (.fromNow (.unix moment time)) " "))
+    (light-grey (str (.fromNow (.unix moment time)) " "))
     (when descendants
       (str
         (hn-orange descendants) " "
@@ -60,7 +60,7 @@
   (pstr
     (nl)
     padding-left
-    (.grey chalk "`esc` or `q` to exit, `hcknws -h` for help.")))
+    (.grey chalk "'esc' or 'q' to exit, 'hcknws -h' for help.")))
 
 (defn print-meta [state]
   (pstr
@@ -69,6 +69,25 @@
     "Page " (inc (:page @state))
     " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
     (nl)))
+
+(defn print-help []
+  (pstr
+    (nl)
+    "  hcknws [options]" (nl 2)
+    (light-grey "  Options:  (display & type will be saved for next time)")
+    (nl 2)
+
+    "    -h, --help        output usage information" (nl)
+    "    -d, --display     display mode [compact, normal]" (.cyan chalk " defaults to normal") (nl)
+    "    -t, --type        story type [top, best, new]" (.cyan chalk " defaults to top") (nl 2)
+    (light-grey "  Example:") (nl 2)
+    (.cyan chalk "    Show compact view of best stories ") (nl)
+    "    hcknws -d compact --type best" (nl 2)
+    (light-grey "  Navigation:") (nl 2)
+    "    - Use up/down/left/right arrows to navigate and paginate stories" (nl)
+    "    - To visit the url of a story, press 'o' when on a selected story" (nl)
+    "    - To visit the comments of a story, press 'c' when on a selected story" (nl))
+  (.exit js/process 0))
 
 (defn start-spinner []
   (let [tick (atom 0)

@@ -29,6 +29,6 @@ $ npm install -g
 
 ### Usage
 ```bash
-# In any dir (should be a repo)
+# In any dir
 $ hcknws
 ```
