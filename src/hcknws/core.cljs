@@ -4,7 +4,8 @@
             [hcknws.ui :as ui]
             [hcknws.prefs :as prefs :refer [set-prefs get-prefs]]
             [hcknws.utils :refer [json-> js->]]
-            [clojure.string]))
+            [clojure.string]
+            [goog.functions :as gfuncs]))
 
 (node/enable-util-print!)
 
@@ -19,15 +20,18 @@
 (def charm ((node/require "charm") stdout))
 (def spawn (.-spawn (node/require "child_process")))
 (def chalk (node/require "chalk"))
+(def size (node/require "window-size"))
 (def header-height 7)
 (def meta-height 3)
+(def footer-height 3)
 (def types {:top {:label "Top"
                   :path "topstories"}
             :new {:label "New"
                   :path "newstories"}
             :best {:label "Best"
                    :path "beststories"}})
-
+(def display {:normal 3
+              :compact 1})
 (def state (atom {:idx 0
                   :page 0
                   :story-ids nil
@@ -37,9 +41,17 @@
                   :display :normal
                   :fetching true}))
 
+(defn set-page-count []
+  (let [avail-rows (- (:height (js-> (.get size)))
+                      header-height
+                      footer-height)
+        page-count (.floor js/Math (/ avail-rows (get display (:display @state))))]
+    (swap! state assoc :page-count page-count)))
+
 (defn get-story-ids []
-  (let [start (* (:page @state) (:page-count @state))]
-    (subvec (:story-ids @state) start (min (count (:story-ids @state)) (+ start (:page-count @state))))))
+  (let [{:keys [page-count page story-ids]} @state
+        start (* page page-count)]
+    (subvec story-ids start (min (count story-ids) (+ start page-count)))))
 
 (defn get-stories []
   (swap! state assoc :fetching true)
@@ -171,6 +183,16 @@
   (when-let [d (get-prefs "display")]
     (swap! state assoc :display (keyword d))))
 
+;; Debounced Resizer works, but need to have relative erasing of
+;; existing rows, rather than absolute position
+; (defn handle-window-resize []
+;   (.on stdout "resize"
+;     (gfuncs/debounce
+;       (fn []
+;         (set-page-count)
+;         (get-page-stories))
+;       500)))
+
 (defn init []
   (process-args)
   (load-prefs)
@@ -178,6 +200,8 @@
     (.reset)
     (.cursor false))
   (setup-rl)
+  (set-page-count)
+  ; (handle-window-resize)
   (let [type (get types (:type @state))]
     (ui/print-banner (:label type))
     (ui/start-spinner)
