@@ -8,6 +8,8 @@
 
 (node/enable-util-print!)
 
+(def minimist (node/require "minimist"))
+(def argv (minimist (.slice (.-argv js/process) 2)))
 (def rp (node/require "request-promise"))
 (def promise (node/require "bluebird"))
 (def readline (node/require "readline"))
@@ -80,13 +82,17 @@
           (swap! state assoc :stories stories)
           (render-stories)))))
 
-(defn exit []
-  (-> charm
-    (.cursor true)
-    (.erase "line"))
-  (.close rl)
-  (.log js/console "\n Bye, see you in a bit.")
-  (.exit js/process 0))
+(defn exit
+  ([]
+   (exit "Bye, see you in a bit."))
+  ([msg]
+   (-> charm
+     (.cursor true)
+     (.erase "line"))
+   (.close rl)
+   (.log js/console (str "\n " msg))
+   (.exit js/process 0)))
+
 
 (defn handle-events [_ key]
   (let [story-change (fn [dir]
@@ -137,20 +143,22 @@
         (.up charm 1)))
     (.on "close" exit)))
 
+(defn set-and-validate-arg [type arg types]
+  (if (some #(= arg %) types)
+    (do
+      (set-prefs type arg)
+      arg)
+    (exit (str (ui/hn-orange (str arg " isn't a valid " type " option!"))
+               "\n Should be one of: " (apply str (interpose ", " types))))))
+
 (defn process-args []
-  (doall
-    (map
-      (fn [arg]
-        (cond
-          (re-find #"--compact|-c" arg) (set-prefs "display" "compact")
-          (re-find #"--normal|-n" arg) (set-prefs "display" "normal")
-          (re-find #"--type=|-t=" arg) (set-prefs "type" (clojure.string/replace-first arg #"^.*=" ""))
-          (re-find #"--per-page=|-p=" arg) (set-prefs "per_page" (clojure.string/replace-first arg #"^.*=" ""))))
-      (nthrest (.slice (.-argv js/process) 3) 2))))
+  (let [{:keys [d display t type] :as args} (js-> argv)]
+    (when-let [display* (or display d)]
+      (set-and-validate-arg "display" display* ["compact" "normal"]))
+    (when-let [type* (or type t)]
+      (set-and-validate-arg "type" type* ["top" "best" "new"]))))
 
 (defn load-prefs []
-  (when-let [pc (get-prefs "per_page")]
-    (swap! state assoc :page-count (js/parseInt pc 10)))
   (when-let [t (get-prefs "type")]
     (swap! state assoc :type (keyword t)))
   (when-let [d (get-prefs "display")]
