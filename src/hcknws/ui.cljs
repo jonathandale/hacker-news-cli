@@ -86,7 +86,8 @@
     (light-grey "  Navigation:") (nl 2)
     "    - Use up/down/left/right arrows to navigate and paginate stories" (nl)
     "    - To visit the url of a story, press 'o' when on a selected story" (nl)
-    "    - To visit the comments of a story, press 'c' when on a selected story" (nl))
+    "    - To visit the comments of a story, press 'c' when on a selected story" (nl)
+    "    - Or, to visit both (comments & story), press 'b' when on a selected story" (nl))
   (.exit js/process 0))
 
 (defn start-spinner []

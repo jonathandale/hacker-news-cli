@@ -139,6 +139,12 @@
             (.erase charm "line")
             (open-link :comments))
 
+          (= "b" k)
+          (do
+            (.erase charm "line")
+            (open-link :url)
+            (open-link :comments))
+
           (or (= "q" k) (= "escape" k))
           (exit)
 
