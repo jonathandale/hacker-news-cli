@@ -183,15 +183,18 @@
   (when-let [d (get-prefs "display")]
     (swap! state assoc :display (keyword d))))
 
-;; Debounced Resizer works, but need to have relative erasing of
-;; existing rows, rather than absolute position
-; (defn handle-window-resize []
-;   (.on stdout "resize"
-;     (gfuncs/debounce
-;       (fn []
-;         (set-page-count)
-;         (get-page-stories))
-;       500)))
+;; Need more thought about clearing/re-rendering on resize.
+;; For now, bail (gracefully)
+(defn handle-window-resize []
+  (.on stdout "resize"
+    (gfuncs/debounce
+      (fn []
+        (-> charm
+          (.cursor true)
+          (.erase "line"))
+        (.log js/console (str (ui/nl) (.yellow chalk (str ui/padding-left "Things get a bit messy when resizing... best to just start again."))))
+        (.exit js/process 0))
+      500)))
 
 (defn init []
   (process-args)
@@ -201,7 +204,7 @@
     (.cursor false))
   (setup-rl)
   (set-page-count)
-  ; (handle-window-resize)
+  (handle-window-resize)
   (let [type (get types (:type @state))]
     (ui/print-banner (:label type))
     (ui/start-spinner)
