@@ -12,7 +12,6 @@
     "bluebird": "^3.5.0",
     "chalk": "^2.0.1",
     "charm": "^1.0.2",
-    "log-update": "^2.1.0",
     "minimist": "^1.2.0",
     "moment": "^2.18.1",
     "preferences": "^0.2.1",
