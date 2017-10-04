@@ -37,8 +37,9 @@
                   :story-ids nil
                   :stories nil
                   :page-count 10
-                  :type :top
+                  :story-type :top
                   :display :normal
+                  :theme :dark
                   :fetching true}))
 
 (defn set-page-count []
@@ -76,12 +77,12 @@
 
 (defn render-stories []
   (let [max-c-w (count (str (apply max (map :descendants (:stories @state)))))
-        job-w (when (some #(= "job" (:type %)) (:stories @state)) 3)
+        job-w (when (some #(= "job" (:story-type %)) (:stories @state)) 3)
         max-w (max max-c-w job-w)]
     (doall
       (map-indexed
         (fn [idx {:keys [title] :as story}]
-          (.write charm (ui/print-story max-w story (:display @state) (= idx (:idx @state)))))
+          (.write charm (ui/print-story max-w story (:display @state) (= idx (:idx @state)) (:theme @state))))
         (:stories @state)))
     (ui/print-footer)))
 
@@ -172,22 +173,28 @@
                "\n Should be one of: " (apply str (interpose ", " types))))))
 
 (defn process-args []
-  (let [{:keys [d display t type h help v version] :as args} (js-> argv)]
+  (let [{:keys [d display t theme s story-type h help v version] :as args} (js-> argv)]
     (cond
       (or help h) (ui/print-help)
       ; (or version v) (ui/print-version)
       :else
+      ;; Simplify when more prefs. DRY.
       (do
         (when-let [display* (or display d)]
           (set-and-validate-arg "display" display* ["compact" "normal"]))
-        (when-let [type* (or type t)]
-          (set-and-validate-arg "type" type* ["top" "best" "new"]))))))
+        (when-let [story* (or story-type s)]
+          (set-and-validate-arg "story-type" story* ["top" "best" "new"]))
+        (when-let [theme* (or theme t)]
+          (set-and-validate-arg "theme" theme* ["light" "dark"]))))))
 
+;; Simplify when more prefs. DRY.
 (defn load-prefs []
-  (when-let [t (get-prefs "type")]
-    (swap! state assoc :type (keyword t)))
+  (when-let [s (get-prefs "story-type")]
+    (swap! state assoc :story-type (keyword s)))
   (when-let [d (get-prefs "display")]
-    (swap! state assoc :display (keyword d))))
+    (swap! state assoc :display (keyword d)))
+  (when-let [t (get-prefs "theme")]
+    (swap! state assoc :theme (keyword t))))
 
 ;; Need more thought about clearing/re-rendering on resize.
 ;; For now, bail (gracefully)
@@ -211,8 +218,8 @@
   (setup-rl)
   (set-page-count)
   (handle-window-resize)
-  (let [type (get types (:type @state))]
-    (ui/print-banner (:label type))
+  (let [type (get types (:story-type @state))]
+    (ui/print-banner (:label type) (:theme @state))
     (ui/start-spinner)
     (-> (rp (str "https://hacker-news.firebaseio.com/v0/" (:path type) ".json"))
         (.then

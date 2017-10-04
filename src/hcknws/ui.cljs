@@ -8,6 +8,7 @@
 (def hn-orange (.rgb chalk 255 102 0))
 (def hn-orange-bg (.bgRgb chalk 255 102 0))
 (def light-grey (.rgb chalk 150 150 150))
+(def dark-grey (.rgb chalk 20 20 20))
 (def timeout (atom nil))
 (def dots {:interval 80 :frames ["⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏"]})
 (def padding-left "    ")
@@ -29,10 +30,10 @@
     "  "
     (if selected (.white.underline chalk title) (.white chalk title))))
 
-(defn print-normal [{:keys [score by title descendants time] :as story} selected]
+(defn print-normal [{:keys [score by title descendants time] :as story} selected theme]
   (pstr
     (if selected (hn-orange " ➜  ") padding-left)
-    (.white chalk title)
+    (if (= :dark theme) (.white chalk title) (dark-grey title))
     (nl)
     padding-left
     (.grey chalk (str "by " by " "))
@@ -43,17 +44,22 @@
         (hn-orange (if (= 1 descendants) "comment" "comments"))))
     (nl)))
 
-(defn print-story [max-w story display selected]
+(defn print-story [max-w story display selected theme]
   (if (= :compact display)
     (print-compact max-w story selected)
-    (print-normal story selected)))
+    (print-normal story selected theme)))
 
-(defn print-banner [label]
+(defn print-banner [label theme]
   (pstr
     (nl 2)
     padding-left
-    (hn-orange-bg " Hacker News ")
-    (.white.inverse chalk (str " " label " Stories "))
+    (if (= :dark theme)
+      (str
+        (hn-orange-bg " Hacker News ")
+        (.white.inverse chalk (str " " label " Stories ")))
+      (str
+        (hn-orange (.underline chalk "Hacker News"))
+        (.grey chalk (str " : " label " Stories"))))
     (nl)))
 
 (defn print-footer []
@@ -63,12 +69,13 @@
     (.grey chalk "'esc' or 'q' to exit, 'hcknws -h' for help.")))
 
 (defn print-meta [state]
-  (pstr
-    (nl)
-    padding-left
-    "Page " (inc (:page @state))
-    " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state)))
-    (nl)))
+  (let [meta (str "Page " (inc (:page @state))
+                  " of " (.round js/Math (/ (count (:story-ids @state)) (:page-count @state))))]
+    (pstr
+      (nl)
+      padding-left
+      (if (= "dark" (:theme @state)) meta (.grey chalk meta))
+      (nl))))
 
 (defn print-help []
   (pstr
@@ -79,7 +86,8 @@
 
     "    -h, --help        output usage information" (nl)
     "    -d, --display     display mode [compact, normal]" (.cyan chalk " defaults to normal") (nl)
-    "    -t, --type        story type [top, best, new]" (.cyan chalk " defaults to top") (nl 2)
+    "    -s, --story-type  story type [top, best, new]" (.cyan chalk " defaults to top") (nl)
+    "    -t, --theme       theme [dark, light]" (.cyan chalk " defaults to dark") (nl 2)
     (light-grey "  Example:") (nl 2)
     (.cyan chalk "    Show compact view of best stories ") (nl)
     "    hcknws -d compact --type best" (nl 2)
