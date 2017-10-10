@@ -42,6 +42,8 @@
                   :theme :dark
                   :fetching true}))
 
+;; Calculate and set number of stories to show per page,
+;; based on available vertical space, and story height.
 (defn set-page-count []
   (let [avail-rows (- (:height (js-> (.get size)))
                       header-height
@@ -49,6 +51,7 @@
         page-count (.floor js/Math (/ avail-rows (get display (:display @state))))]
     (swap! state assoc :page-count page-count)))
 
+;; Select story ids, based on page count and items/page.
 (defn get-story-ids []
   (let [{:keys [page-count page story-ids]} @state
         start (* page page-count)]
@@ -63,6 +66,7 @@
                 (swap! state assoc :fetching false)
                 (map json-> (js-> %))))))
 
+;; Open comments or original story in browser (in the background).
 (defn open-link [type]
   (let [story (nth (:stories @state) (:idx @state))
         c-link (str "https://news.ycombinator.com/item?id=" (:id story))
@@ -86,6 +90,8 @@
         (:stories @state)))
     (ui/print-footer)))
 
+;; Clear stories, show loading spinner, update meta, and once
+;; stories are available, update state and then render.
 (defn get-page-stories []
   (clear-stories (- header-height meta-height))
   (.write charm (ui/print-meta state))
@@ -101,14 +107,14 @@
   ([]
    (exit "   Bye, see you in a bit."))
   ([msg]
-   (-> charm
-     (.cursor true)
-     (.erase "line"))
+   (-> charm (.cursor true) (.erase "line"))
    (.close rl)
    (.log js/console (str "\n " msg))
    (.exit js/process 0)))
 
-
+;; Future improvement: It's not necessary to re-render list of stories
+;; when highlighting the selected story (rendering arrow in the left gutter).
+;; Instead, consider just clearing/rendering the arrow when navigating up/down.
 (defn handle-events [_ key]
   (let [story-change (fn [dir]
                         (clear-stories header-height)
@@ -166,19 +172,17 @@
 
 (defn set-and-validate-arg [type arg types]
   (if (some #(= arg %) types)
-    (do
-      (set-prefs type arg)
-      arg)
+    (set-prefs type arg)
     (exit (str (ui/hn-orange (str arg " isn't a valid " type " option!"))
                "\n Should be one of: " (apply str (interpose ", " types))))))
 
+;; Process command line args & validate. If invalid, exit.
+;; Simplify when more prefs. DRY.
 (defn process-args []
   (let [{:keys [d display t theme s story-type h help v version] :as args} (js-> argv)]
     (cond
       (or help h) (ui/print-help)
-      ; (or version v) (ui/print-version)
       :else
-      ;; Simplify when more prefs. DRY.
       (do
         (when-let [display* (or display d)]
           (set-and-validate-arg "display" display* ["compact" "normal"]))
@@ -188,6 +192,7 @@
           (set-and-validate-arg "theme" theme* ["light" "dark"]))))))
 
 ;; Simplify when more prefs. DRY.
+;; Get user settings from stored prefs, and add to state
 (defn load-prefs []
   (when-let [s (get-prefs "story-type")]
     (swap! state assoc :story-type (keyword s)))
@@ -202,19 +207,19 @@
   (.on stdout "resize"
     (gfuncs/debounce
       (fn []
-        (-> charm
-          (.cursor true)
-          (.erase "line"))
-        (.log js/console (str (ui/nl) (.yellow chalk (str ui/padding-left "Things get a bit messy when resizing... best to just start again."))))
+        (-> charm (.cursor true) (.erase "line"))
+        (.log js/console
+          (str (ui/nl)
+               (.yellow chalk
+                  (str ui/padding-left "Things get a bit messy when resizing... "
+                                       "best to just start again."))))
         (.exit js/process 0))
       500)))
 
 (defn init []
   (process-args)
   (load-prefs)
-  (-> charm
-    (.reset)
-    (.cursor false))
+  (-> charm (.reset) (.cursor false))
   (setup-rl)
   (set-page-count)
   (handle-window-resize)
