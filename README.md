@@ -30,8 +30,8 @@ $ npm install -g
 
 ### Install manually
 1. [Download release](https://github.com/jonathandale/hacker-news-cli/releases/download/1.0.0/macos.zip) (only mac at the moment)
-- Unzip & place it on your `$PATH` where your shell can find it (eg. `~/bin`)
-- Set it to be executable (`chmod a+x ~/bin/hcknws`)
+2. Unzip & place it on your `$PATH` where your shell can find it (eg. `~/bin`)
+3. Set it to be executable (`chmod a+x ~/bin/hcknws`)
 
 ### Usage
 ```bash
