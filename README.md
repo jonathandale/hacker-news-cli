@@ -1,6 +1,6 @@
 # Hacker News CLI
 
-Use hcknws to view top Hacker News stories.
+Use `hcknws` to view and open links/comments of Hacker News stories.
 
 ### Prerequisites
 1. [nodejs & npm](https://nodejs.org/en/download/)
