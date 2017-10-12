@@ -3,7 +3,6 @@
             [cljs.pprint :refer [pprint]]
             [hcknws.ui :as ui]
             [hcknws.prefs :as prefs :refer [set-prefs get-prefs]]
-            [hcknws.utils :refer [json-> js->]]
             [clojure.string]
             [goog.functions :as gfuncs]))
 
@@ -41,6 +40,12 @@
                   :display :normal
                   :theme :dark
                   :fetching true}))
+
+(defn js-> [j]
+  (js->clj j :keywordize-keys true))
+
+(defn json-> [j]
+  (js-> (.parse js/JSON j)))
 
 ;; Calculate and set number of stories to show per page,
 ;; based on available vertical space, and story height.
